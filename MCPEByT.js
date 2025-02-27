@@ -17,7 +17,7 @@ const BOT_NAME = '_HeroBrine86474';
 // const SERVER_IP =  process.env.SERVER || 'play.earthsmp.live';  
 // const SERVER_PORT = process.env.PORT || 19132;  
 // const BOT_NAME =  process.env.BOT_NAME ||'_HeroBrine86474';  
-const RECONNECT_DELAY = 5000; // 5 seconds
+const RECONNECT_DELAY = 120000; // 5 seconds
 
 app.listen(POST, () => {
     console.log(`Server is running at http://127.0.0.1:${POST}`);
@@ -40,7 +40,7 @@ var isBotLogin = false;
 var rec = 0;
 
 
-function startBot(msg) {
+async function startBot(msg) {
     if(isBotLogin){
         Tbot.sendMessage(msg.chat.id, `Bot is Already Login in the game!`);
         return;
@@ -58,6 +58,9 @@ function startBot(msg) {
         flow: 'live',
         connectTimeout: 10000,
     });
+ 
+
+
     bot.on('packet', (packet) => {
         // logPacket(packet);
     
@@ -78,7 +81,7 @@ function startBot(msg) {
                     // console.log(`[🍖] Food updated to ${food}`);
                 }
             }
-        }else if (packet.data.name === 'player_list' && packet.data.params.records.records_count > 1){
+        }else if (packet.data.name === 'player_list' && packet.data.params.records.records_count > 1 && packet.data.params.records.type === 'add') {
             pcount = packet.data.params.records.records_count;
             if(pcount <= 4){
                 BotDisconnect();
@@ -121,72 +124,88 @@ function startBot(msg) {
 
     function BotDisconnect(){
         bot.disconnect();
-        setInterval(() => {
+        setTimeout(() => {
             bot.close();
-        }, 1000);
+        }, 2000);
           
     }
     bot.on('close', () => {
-            console.log(`[❌] Bot closed`);
-            Tbot.sendMessage(msg.chat.id, `Bot is Close in the game!`);
-        });
+        console.log(`[❌] Bot closed`);
+        Tbot.sendMessage(msg.chat.id, `Bot is Logout From the game!`);
+    });
+    
+//is any button to clear all the message
+   
+    
+    // function stripColorCodes(text) {
+    //     return text.replace(/§[0-9A-FK-OR]/ig, ''); 
+    // }
     Tbot.onText(/\/close/, (msg) => {
         if(!isBotLogin){
             Tbot.sendMessage(msg.chat.id, `Bot is not Login in the game!`);
             return;
         }
         isBotLogin = false;
-        console.log(`Bot is Close in the game!`);
+        console.log(`Bot is Closeing the game!`);
         BotDisconnect();
     });
-//is any button to clear all the message
+  
+
+    }
+}   
+
     Tbot.onText(/\/clear/, (msg) => {
         console.log(`Bot is Clear all the message!`);
         Tbot.deleteMessage( msg.chat.id, msg.message_id, a);
     });
-    Tbot.onText(/\/health/, (msg) => {  
-        Tbot.sendMessage(msg.chat.id, `❤️ Health: ${health} \n🍗 Food: ${food} \n🤦‍♂️Players: ${pcount + 1}`);
-    }
-    );
     
-    // function stripColorCodes(text) {
-    //     return text.replace(/§[0-9A-FK-OR]/ig, ''); 
-    // }
 
-    function reconnect(msg) {
-        if(rec < 3){
-            rec++;
-            console.log(`[⏳] Reconnecting in ${RECONNECT_DELAY / 1000} seconds...`);
-            Tbot.sendMessage(msg.chat.id, `Reconnecting in ${RECONNECT_DELAY / 1000} seconds...`);
-            setTimeout(() => {startBot(msg)}, RECONNECT_DELAY);
-        }
+
+
+function reconnect(msg) {
+    if(rec < 3){
+        rec++;
+        console.log(`[⏳] Reconnecting in ${RECONNECT_DELAY / 1000} seconds...`);
+        Tbot.sendMessage(msg.chat.id, `Reconnecting in ${RECONNECT_DELAY / 1000} seconds...`);
+        setTimeout(() => {startBot(msg)}, RECONNECT_DELAY);
+        
+    }else{
+        Tbot.sendMessage(msg.chat.id, `Server is not responding! \n \ntry /login to login the bot in the game! After some time.`);
+        rec = 0;
         
     }
-
-}
+    return;
 }
     // Log all packets to a JSON file
-if(isBotLogin){
+if(!isBotLogin){
     Tbot.onText(/\/close/, (msg) => {
         Tbot.sendMessage(msg.chat.id, `Bot is not Login in the game! \n \ntry /login to login the bot in the game!`);
     });
+    
 }
     
 
 
+Tbot.onText(/\/health/, (msg) => {  
+    if(!isBotLogin){
+        Tbot.sendMessage(msg.chat.id, `Bot is not Login in the game! \n \ntry /login to login the bot in the game!`);
+        return;
+    }
+    Tbot.sendMessage(msg.chat.id, `❤️ Health: ${health} \n🍗 Food: ${food} \n🤦‍♂️Players: ${pcount + 1}`);
+    });
 
 
 
 
-
-Tbot.onText(/\/login/, (msg) => {
+Tbot.onText(/\/login/, (msg) =>  {
     console.log(`Bot is Login in the game!`);
     try {
         if(isBotLogin){
             Tbot.sendMessage(msg.chat.id, `Bot is Already Login in the game!`);
             return;
+        }else{
+            startBot(msg);
         }
-        startBot(msg);
     } catch (error) {
         console.log(`Error: ${error}`);
         Tbot.sendMessage(msg.chat.id, `Something went wrong!!`);
